@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111111">
+  <title>SafeRoute — Accident support</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17251f;
+      --muted: #65736b;
+      --green: #18794e;
+      --green-dark: #12613e;
+      --pale: #eaf4ed;
+      --line: #dce5de;
+      --surface: #fff;
+      --red: #b42318;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f4f7f4;
+      color: var(--ink);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { max-width: 1040px; margin: 0 auto; padding: 24px 24px 48px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 42px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 18px; font-weight: 750; letter-spacing: -.03em; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; color: white; background: var(--green); }
+    .brand-mark svg { width: 21px; height: 21px; }
+    .secure-note { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 7px; }
+    .secure-note svg { width: 16px; height: 16px; }
+    main { max-width: 760px; margin: 0 auto; }
+    .eyebrow { margin: 0 0 12px; color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(32px, 5vw, 48px); line-height: 1.08; letter-spacing: -.055em; }
+    .intro { max-width: 590px; margin: 15px 0 28px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+    .card { padding: clamp(22px, 4vw, 36px); border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: 0 12px 40px #1632220b; }
+    .card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 23px; }
+    h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+    .card-heading p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .step { flex: 0 0 auto; padding: 7px 10px; color: var(--green-dark); background: var(--pale); border-radius: 999px; font-size: 12px; font-weight: 750; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 16px; }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 13px; font-weight: 700; }
+    .optional { color: var(--muted); font-weight: 450; }
+    input, select {
+      width: 100%; min-height: 48px; padding: 11px 13px; border: 1px solid #cfd9d1; border-radius: 10px; outline: none; color: var(--ink); background: white;
+    }
+    input::placeholder { color: #9aa59d; }
+    input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px #18794e1a; }
+    .hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .checkbox-row { display: flex; align-items: flex-start; gap: 10px; margin: 21px 0 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .checkbox-row input { width: 17px; min-height: 17px; height: 17px; flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--green); }
+    .primary, .secondary, .danger-button {
+      min-height: 48px; padding: 12px 18px; border: 0; border-radius: 10px; font-weight: 750; transition: background .15s ease, transform .15s ease;
+    }
+    .primary { width: 100%; color: white; background: var(--green); }
+    .primary:hover { background: var(--green-dark); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible, a:focus-visible { outline: 3px solid #70b88e; outline-offset: 3px; }
+    .privacy { margin: 13px 0 0; text-align: center; color: var(--muted); font-size: 12px; }
+    .hidden { display: none !important; }
+    .dashboard { margin-top: 26px; }
+    .share-banner { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 21px; border-radius: 15px; background: #eaf4ed; }
+    .share-copy strong { display: block; margin-bottom: 4px; font-size: 15px; }
+    .share-copy span { color: #52685a; font-size: 13px; line-height: 1.45; }
+    .secondary { flex: 0 0 auto; min-height: 42px; color: white; background: var(--green); }
+    .secondary:hover { background: var(--green-dark); }
+    .status-card { margin-top: 16px; padding: 24px; }
+    .status-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .status-label { display: flex; align-items: center; gap: 9px; font-size: 17px; font-weight: 750; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #89938d; }
+    .status-dot.live { background: #23935f; box-shadow: 0 0 0 4px #23935f1a; }
+    .status-dot.alert { background: var(--red); box-shadow: 0 0 0 4px #b423181a; }
+    .status-pill { padding: 6px 9px; border-radius: 99px; color: #52685a; background: #f1f4f1; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+    .status-detail { margin: 8px 0 0 19px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .location-box { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
+    .location-box span { display: block; color: var(--muted); font-size: 12px; }
+    .location-box strong { display: block; margin-top: 5px; font-size: 14px; font-variant-numeric: tabular-nums; }
+    .location-box a { color: var(--green-dark); font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .alert-box { margin-top: 15px; padding: 14px 15px; border: 1px solid #f2c8c4; border-radius: 11px; color: #812018; background: #fff6f5; font-size: 13px; line-height: 1.55; }
+    .alert-box a { display: inline-block; margin-top: 9px; color: #812018; font-weight: 750; }
+    .dashboard-actions { display: flex; justify-content: flex-end; margin-top: 17px; }
+    .danger-button { min-height: 40px; color: #6d2924; background: #f8e9e7; font-size: 13px; }
+    .danger-button:hover { background: #f3d8d4; }
+    .disclaimer { margin: 20px auto 0; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+    .toast { position: fixed; right: 20px; bottom: 20px; z-index: 2; max-width: min(420px, calc(100vw - 40px)); padding: 14px 17px; border-radius: 12px; color: white; background: #24362c; box-shadow: 0 8px 28px #0002; font-size: 14px; line-height: 1.5; }
+    @media (max-width: 600px) {
+      .shell { padding: 18px 16px 36px; }
+      header { margin-bottom: 32px; }
+      .secure-note { font-size: 11px; }
+      .form-grid { grid-template-columns: 1fr; gap: 15px; }
+      .field.full { grid-column: auto; }
+      .share-banner { align-items: stretch; flex-direction: column; }
+      .secondary { width: 100%; }
+      .location-box { align-items: flex-start; flex-direction: column; }
+    }
+    :root {
+      color-scheme: dark;
+      --ink: #f7f4f3;
+      --muted: #aaa3a2;
+      --green: #f04438;
+      --green-dark: #c92a21;
+      --pale: #321b1a;
+      --line: #383232;
+      --surface: #1b1919;
+      --red: #ff5147;
+    }
+    body { background: #101010; color: var(--ink); }
+    .shell { max-width: 1120px; }
+    header { margin-bottom: 34px; }
+    .brand-mark { background: #e33129; }
+    main { max-width: 900px; }
+    .secure-note { color: #aaa3a2; }
+    .eyebrow { color: #ff5b52; }
+    .card { background: #1b1919; border-color: #383232; box-shadow: 0 18px 55px #0005; }
+    input, select { color: #f7f4f3; background: #111; border-color: #494141; }
+    input::placeholder { color: #827b7b; }
+    input:focus, select:focus { border-color: #f04438; box-shadow: 0 0 0 3px #f0443826; }
+    option { color: #f7f4f3; background: #1b1919; }
+    .step { color: #ff8179; background: #321b1a; }
+    .primary, .secondary { background: #e33129; }
+    .primary:hover, .secondary:hover { background: #c92a21; }
+    button:focus-visible, a:focus-visible { outline-color: #ff8179; }
+    .share-banner { background: #281918; border: 1px solid #512522; }
+    .share-copy span { color: #c7adaa; }
+    .status-dot { background: #817a79; }
+    .status-dot.live { background: #ed5148; box-shadow: 0 0 0 4px #ed514826; }
+    .status-pill { color: #d4c9c8; background: #292525; }
+    .location-box { border-color: #383232; background: #151414; }
+    .location-box a { color: #ff8179; }
+    .alert-box { border-color: #74312c; color: #ffb5af; background: #301817; }
+    .alert-box a { color: #ff8179; }
+    .danger-button { color: #ffb5af; background: #351d1c; }
+    .danger-button:hover { background: #4a2421; }
+    .hero { position: relative; overflow: hidden; padding: clamp(30px, 7vw, 72px); border: 1px solid #3a2422; border-radius: 28px; background: radial-gradient(ellipse at 90% 4%, #5a211d 0, transparent 38%), linear-gradient(135deg, #211918, #121212 70%); }
+    .hero h1 { max-width: 740px; font-size: clamp(46px, 8vw, 86px); line-height: .98; letter-spacing: -.075em; }
+    .hero h1 span { color: #ff5147; }
+    .hero .intro { max-width: 630px; margin: 20px 0 26px; color: #c3b9b8; font-size: clamp(16px, 2vw, 19px); }
+    .vehicle-art { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 34px 0 26px; }
+    .vehicle-art figure { position: relative; height: 172px; margin: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #44302e; border-radius: 18px; background: linear-gradient(145deg, #281d1c, #181616); }
+    .vehicle-art img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(.82) brightness(.78); }
+    .vehicle-art figure::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, #100d0dcc, transparent 58%); pointer-events: none; }
+    .vehicle-art figcaption { position: absolute; z-index: 1; top: 14px; left: 16px; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .hero-actions { display: flex; align-items: center; gap: 14px; }
+    .hero-actions .primary { width: auto; min-width: 210px; }
+    .hero-note { color: #a99f9e; font-size: 12px; }
+    .page-heading { margin-bottom: 22px; }
+    .page-heading h1 { font-size: clamp(32px, 5vw, 46px); }
+    .page-heading p { color: var(--muted); line-height: 1.6; }
+    .map-frame { width: 100%; height: 340px; display: block; margin-top: 18px; border: 1px solid #383232; border-radius: 14px; background: #111; }
+    .dashboard { margin-top: 0; }
+    .dashboard .share-banner { margin-bottom: 16px; }
+    .dashboard-actions { justify-content: space-between; }
+    .back-button { min-height: 40px; border: 1px solid #494141; border-radius: 10px; padding: 9px 14px; color: #ddd5d4; background: transparent; font-weight: 700; }
+    .back-button:hover { background: #272222; }
+    @media (max-width: 600px) {
+      .hero { padding: 30px 22px; border-radius: 20px; }
+      .vehicle-art { gap: 10px; }
+      .vehicle-art figure { height: 128px; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .hero-actions .primary { width: 100%; }
+      .hero-note { text-align: center; }
+      .map-frame { height: 270px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-4.5 7-11V5l-7-3-7 3v5c0 6.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        SafeRoute
+      </div>
+      <div class="secure-note">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 10V7a7 7 0 0 1 14 0v3m-14 0h14v11H5V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 14v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        Your profile stays on this device
+      </div>
+    </header>
+
+    <main>
+      <section id="welcome-page" class="hero" aria-labelledby="welcome-title">
+        <p class="eyebrow">A little safer, every journey</p>
+        <h1 id="welcome-title">Welcome to <span>SafeRoute.</span></h1>
+        <p class="intro">A simple way to keep someone you trust in the loop. Set up your emergency profile, track your location on a map, and share it with your guardian when you need to.</p>
+        <div class="vehicle-art" aria-label="Car and motorcycle illustrations">
+          <figure>
+            <figcaption>On the road</figcaption>
+            <img src="assets/car.jpg" alt="Photo of a car on the road" loading="eager">
+          </figure>
+          <figure>
+            <figcaption>Two wheels, one tap away</figcaption>
+            <img src="assets/motorcycle.jpg" alt="Photo of a motorcycle" loading="eager">
+          </figure>
+        </div>
+        <div class="hero-actions">
+          <button class="primary" type="button" id="start-button">Set up my profile <span aria-hidden="true">→</span></button>
+          <span class="hero-note">Your location is shared only when you choose.</span>
+        </div>
+      </section>
+
+      <section class="hidden" id="setup-page" aria-labelledby="setup-title">
+        <div class="page-heading">
+          <p class="eyebrow">Step 2 of 3 · Your details</p>
+          <h1 id="setup-title">Set up your profile</h1>
+          <p>Tell us who you are and who should receive your location.</p>
+        </div>
+      <section class="card" id="setup-card" aria-labelledby="profile-title">
+        <div class="card-heading">
+          <div>
+            <h2 id="profile-title">Emergency profile</h2>
+            <p>Details stay in this browser and are used to prepare your location message.</p>
+          </div>
+          <span class="step">STEP 2 / 3</span>
+        </div>
+        <form id="setup-form">
+          <div class="form-grid">
+            <div class="field">
+              <label for="user-name">First name</label>
+              <input id="user-name" name="name" autocomplete="given-name" placeholder="e.g. Alex" required>
+            </div>
+            <div class="field">
+              <label for="age">Age</label>
+              <input id="age" name="age" type="number" min="1" max="120" inputmode="numeric" placeholder="Your age" required>
+            </div>
+            <div class="field">
+              <label for="mobile">Mobile number</label>
+              <input id="mobile" name="mobile" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" required>
+            </div>
+            <div class="field">
+              <label for="gps-number">GPS / device number</label>
+              <input id="gps-number" name="gps" placeholder="GPS device ID or number" required>
+              <p class="hint">For reference only. Live location comes from this device's browser GPS, not this ID number.</p>
+            </div>
+            <div class="field">
+              <label for="vehicle">Vehicle type</label>
+              <select id="vehicle" name="vehicle" required>
+                <option value="">Choose a vehicle</option>
+                <option>Car</option>
+                <option>Bike / motorcycle</option>
+                <option>Truck</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field full hidden" id="other-vehicle-field">
+              <label for="other-vehicle">Vehicle description</label>
+              <input id="other-vehicle" name="otherVehicle" placeholder="e.g. Van">
+            </div>
+            <div class="field full">
+              <label for="guardian-name">Guardian name</label>
+              <input id="guardian-name" name="guardianName" autocomplete="name" placeholder="Person to contact" required>
+            </div>
+            <div class="field full">
+              <label for="guardian">Guardian's mobile number</label>
+              <input id="guardian" name="guardian" type="tel" autocomplete="tel" placeholder="Include country code, e.g. +1 555 987 6543" required>
+              <p class="hint">This number will be used to prepare a text message when you share your location or GPS is lost.</p>
+            </div>
+          </div>
+          <label class="checkbox-row" for="consent">
+            <input id="consent" type="checkbox" required>
+            <span>I understand that location sharing uses my device's GPS and browser permission. I will choose when to send my location to my guardian.</span>
+          </label>
+          <button class="primary" type="submit">Continue to live map <span aria-hidden="true">→</span></button>
+          <p class="privacy">Your profile is kept only in this browser tab. OpenStreetMap receives your coordinates to display the map.</p>
+        </form>
+      </section>
+      </section>
+
+      <section class="dashboard hidden" id="dashboard" aria-label="Location sharing and GPS status">
+        <div class="page-heading">
+          <p class="eyebrow">Step 3 of 3 · Live location</p>
+          <h1>Your journey, on the map.</h1>
+          <p id="welcome-user"></p>
+        </div>
+        <div class="share-banner">
+          <div class="share-copy">
+            <strong>Share your location with your guardian</strong>
+            <span>Send a text with your latest location whenever you choose.</span>
+          </div>
+          <button class="secondary" type="button" id="share-button">Share my location</button>
+        </div>
+        <div class="card status-card">
+          <div class="status-top">
+            <div>
+              <div class="status-label"><span class="status-dot" id="status-dot"></span><span id="status-title">Waiting for GPS</span></div>
+              <p class="status-detail" id="status-detail" aria-live="polite">Allow location access when your browser asks. Keep this page open while tracking.</p>
+            </div>
+            <span class="status-pill" id="status-pill">Not connected</span>
+          </div>
+          <div class="location-box">
+            <div>
+              <span>Last known location</span>
+              <strong id="coordinates">Waiting for GPS signal…</strong>
+            </div>
+            <a class="hidden" id="map-link" target="_blank" rel="noopener noreferrer">Open map</a>
+          </div>
+          <iframe id="map-frame" class="map-frame" title="Map showing your current location" loading="lazy" referrerpolicy="no-referrer" src="about:blank"></iframe>
+          <p class="hint">Coordinates update with each GPS fix; the map recenters as you move. OpenStreetMap receives coordinates to display the map.</p>
+          <div class="alert-box hidden" id="gps-alert" role="alert">
+            <strong>GPS signal lost.</strong> SafeRoute cannot automatically contact your guardian from this browser. Tap below to prepare an SMS alert; your messaging app will ask you to send it.
+            <br><a id="alert-link" href="#">Prepare SMS to guardian</a>
+          </div>
+          <div class="dashboard-actions">
+            <button class="back-button" type="button" id="edit-profile-button">Back to profile</button>
+            <button class="danger-button" type="button" id="stop-button">Stop location tracking</button>
+          </div>
+        </div>
+        <p class="disclaimer">SafeRoute is a support tool, not an emergency service. It cannot detect a crash or send SMS automatically. For immediate danger, contact your local emergency services.</p>
+      </section>
+    </main>
+  </div>
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const form = document.getElementById("setup-form");
+      const welcomePage = document.getElementById("welcome-page");
+      const setupPage = document.getElementById("setup-page");
+      const dashboard = document.getElementById("dashboard");
+      const vehicleSelect = document.getElementById("vehicle");
+      const otherVehicleField = document.getElementById("other-vehicle-field");
+      const otherVehicleInput = document.getElementById("other-vehicle");
+      const mapFrame = document.getElementById("map-frame");
+      const statusDot = document.getElementById("status-dot");
+      const statusTitle = document.getElementById("status-title");
+      const statusDetail = document.getElementById("status-detail");
+      const statusPill = document.getElementById("status-pill");
+      const coordinates = document.getElementById("coordinates");
+      const mapLink = document.getElementById("map-link");
+      const gpsAlert = document.getElementById("gps-alert");
+      const alertLink = document.getElementById("alert-link");
+      const toast = document.getElementById("toast");
+      let watchId = null;
+      let lastPosition = null;
+      let guardianNumber = "";
+      let guardianName = "";
+      let userName = "";
+      let userAge = "";
+      let gpsNumber = "";
+      let vehicleName = "";
+      let lostSignal = false;
+      let trackingActive = false;
+      let staleTimer = null;
+      let toastTimer = null;
+      let lastMapPosition = null;
+      let lastMapUpdateAt = 0;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.add("hidden"), 5000);
+      }
+
+      function smsUrl(message) {
+        return "sms:" + encodeURIComponent(guardianNumber) + "?body=" + encodeURIComponent(message);
+      }
+
+      function locationMessage(prefix) {
+        const details = [prefix, "To: " + guardianName, userName + ", age " + userAge + (vehicleName ? " (" + vehicleName + ")" : "")];
+        if (gpsNumber) details.push("GPS/device number: " + gpsNumber);
+        if (lastPosition) {
+          const lat = lastPosition.coords.latitude;
+          const lon = lastPosition.coords.longitude;
+          details.push("Last known location at " + new Date(lastPosition.timestamp).toLocaleString() + ": https://maps.google.com/?q=" + lat + "," + lon);
+          details.push("Accuracy: about " + Math.round(lastPosition.coords.accuracy) + " m");
+        } else {
+          details.push("My GPS location is currently unavailable.");
+        }
+        return details.join("\n");
+      }
+
+      function setGpsLost(message) {
+        statusDot.classList.remove("live");
+        statusDot.classList.add("alert");
+        statusTitle.textContent = "GPS signal lost";
+        statusDetail.textContent = message;
+        statusPill.textContent = "Signal lost";
+        statusPill.style.color = "var(--red)";
+        statusPill.style.background = "#fff0ee";
+        gpsAlert.classList.remove("hidden");
+        alertLink.href = smsUrl(locationMessage("GPS ALERT:"));
+        if (!lostSignal) showToast("GPS signal lost. Tap the alert to prepare an SMS to your guardian.");
+        lostSignal = true;
+      }
+
+      function distanceInMeters(first, second) {
+        const radians = (degrees) => degrees * Math.PI / 180;
+        const latDifference = radians(second.coords.latitude - first.coords.latitude);
+        const lonDifference = radians(second.coords.longitude - first.coords.longitude);
+        const a = Math.sin(latDifference / 2) ** 2 +
+          Math.cos(radians(first.coords.latitude)) * Math.cos(radians(second.coords.latitude)) *
+          Math.sin(lonDifference / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+
+      function updateMap(position) {
+        const shouldRefresh = !lastMapPosition ||
+          (Date.now() - lastMapUpdateAt >= 15000 && distanceInMeters(lastMapPosition, position) >= 50);
+        if (!shouldRefresh) return;
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const delta = Math.max(0.003, Math.min(0.02, position.coords.accuracy / 111000 * 3));
+        const bounds = [
+          Math.max(-180, lon - delta),
+          Math.max(-90, lat - delta),
+          Math.min(180, lon + delta),
+          Math.min(90, lat + delta)
+        ].join(",");
+        mapFrame.src = "https://www.openstreetmap.org/export/embed.html?bbox=" + encodeURIComponent(bounds) + "&layer=mapnik&marker=" + encodeURIComponent(lat + "," + lon);
+        lastMapPosition = position;
+        lastMapUpdateAt = Date.now();
+      }
+
+      function onPosition(position) {
+        if (!trackingActive) return;
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(position.coords.accuracy) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+          setGpsLost("The device returned invalid coordinates. Check location services and try again.");
+          return;
+        }
+        lastPosition = position;
+        coordinates.textContent = lat.toFixed(5) + ", " + lon.toFixed(5) + " (±" + Math.round(position.coords.accuracy) + " m)";
+        mapLink.href = "https://maps.google.com/?q=" + lat + "," + lon;
+        mapLink.classList.remove("hidden");
+        updateMap(position);
+        statusDot.classList.remove("alert");
+        statusDot.classList.add("live");
+        statusTitle.textContent = "Location is updating";
+        statusDetail.textContent = "Last updated " + new Date(position.timestamp).toLocaleTimeString() + ". Keep this page open to continue tracking.";
+        statusPill.textContent = "GPS connected";
+        statusPill.style.color = "";
+        statusPill.style.background = "";
+        gpsAlert.classList.add("hidden");
+        lostSignal = false;
+      }
+
+      function onPositionError(error) {
+        if (!trackingActive) return;
+        if (error.code === error.PERMISSION_DENIED) {
+          setGpsLost("Location permission was denied. Allow location access in your browser settings, then try again.");
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setGpsLost("Your device cannot currently determine its location. Check that device location services are on.");
+        } else {
+          setGpsLost("The GPS request timed out. Check your signal; SafeRoute will keep trying.");
+        }
+      }
+
+      function stopWatching() {
+        trackingActive = false;
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+        }
+        window.clearInterval(staleTimer);
+        staleTimer = null;
+      }
+
+      function resetLocation() {
+        lastPosition = null;
+        lostSignal = false;
+        coordinates.textContent = "Waiting for GPS signal…";
+        mapLink.classList.add("hidden");
+        mapFrame.src = "about:blank";
+        lastMapPosition = null;
+        lastMapUpdateAt = 0;
+        statusDot.classList.remove("live", "alert");
+        statusTitle.textContent = "Waiting for GPS";
+        statusPill.textContent = "Not connected";
+        statusPill.style.color = "";
+        statusPill.style.background = "";
+        gpsAlert.classList.add("hidden");
+      }
+
+      function stopTracking() {
+        stopWatching();
+        gpsAlert.classList.add("hidden");
+        dashboard.classList.add("hidden");
+        setupPage.classList.add("hidden");
+        welcomePage.classList.remove("hidden");
+        form.reset();
+        otherVehicleField.classList.add("hidden");
+        otherVehicleInput.required = false;
+        statusDetail.textContent = "Allow location access when your browser asks. Keep this page open while tracking.";
+        resetLocation();
+      }
+
+      function editProfile() {
+        stopWatching();
+        dashboard.classList.add("hidden");
+        setupPage.classList.remove("hidden");
+      }
+
+      vehicleSelect.addEventListener("change", () => {
+        const isOther = vehicleSelect.value === "Other";
+        otherVehicleField.classList.toggle("hidden", !isOther);
+        otherVehicleInput.required = isOther;
+      });
+
+      document.getElementById("start-button").addEventListener("click", () => {
+        welcomePage.classList.add("hidden");
+        setupPage.classList.remove("hidden");
+        document.getElementById("user-name").focus();
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        if (!navigator.geolocation) {
+          showToast("This browser does not support location tracking. Try a current browser on a GPS-enabled device.");
+          return;
+        }
+        if (!window.isSecureContext) {
+          showToast("Location access requires a secure page. Open SafeRoute over HTTPS or localhost.");
+          return;
+        }
+        const formData = new FormData(form);
+        userName = String(formData.get("name")).trim();
+        userAge = String(formData.get("age")).trim();
+        gpsNumber = String(formData.get("gps")).trim();
+        guardianNumber = String(formData.get("guardian")).trim();
+        guardianName = String(formData.get("guardianName")).trim();
+        vehicleName = vehicleSelect.value === "Other" ? otherVehicleInput.value.trim() : vehicleSelect.value;
+        document.getElementById("welcome-user").textContent = "Tracking location for " + userName + ". Location sharing remains under your control.";
+        resetLocation();
+        setupPage.classList.add("hidden");
+        dashboard.classList.remove("hidden");
+        statusDetail.textContent = "Requesting location access. Please allow it in your browser.";
+        trackingActive = true;
+        watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 30000
+        });
+        staleTimer = window.setInterval(() => {
+          if (trackingActive && lastPosition && Date.now() - lastPosition.timestamp > 60000) {
+            setGpsLost("No fresh GPS position has arrived for over a minute. The map shows your last known location; check device location services.");
+          }
+        }, 10000);
+      });
+
+      document.getElementById("share-button").addEventListener("click", () => {
+        if (!lastPosition || Date.now() - lastPosition.timestamp > 60000) {
+          showToast("A fresh location is not available yet. Wait for GPS to update before sharing.");
+          return;
+        }
+        window.location.href = smsUrl(locationMessage("My current location:"));
+      });
+
+      document.getElementById("stop-button").addEventListener("click", stopTracking);
+      document.getElementById("edit-profile-button").addEventListener("click", editProfile);
+    })();
+  </script>
+</body>
+</html>
